@@ -9,8 +9,23 @@ pub struct ChineseNER {
     segmentor: jieba_rs::Jieba,
 }
 
+impl Default for ChineseNER {
+    fn default() -> ChineseNER {
+        ChineseNER::new()
+    }
+}
+
 impl ChineseNER {
-    pub fn new(model_path: &str) -> Self {
+    pub fn new() -> Self {
+        let model_bytes = include_bytes!("ner.model");
+        let model = crfsuite::Model::from_memory(&model_bytes[..]).expect("open model failed");
+        Self {
+            model,
+            segmentor: Jieba::new(),
+        }
+    }
+
+    pub fn from_model(model_path: &str) -> Self {
         let model = crfsuite::Model::from_file(model_path).expect("open model failed");
         Self {
             model,
@@ -167,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_ner_predict() {
-        let ner = ChineseNER::new("ner.model");
+        let ner = ChineseNER::new();
         let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
         let tags = ner.predict(sentence);
         assert_eq!(tags, vec!["O", "O", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "O"]);
