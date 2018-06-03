@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn test_ner_predict() {
         let ner = ChineseNER::new("ner.model");
-        let sentence = "今天纽约的天气真好啊，京华大酒店的张尧经理吃了一只北京烤鸭。";
+        let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
         let tags = ner.predict(sentence);
         assert_eq!(tags, vec!["O", "O", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "O"]);
     }
