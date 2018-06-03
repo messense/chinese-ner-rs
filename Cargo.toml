@@ -1,0 +1,8 @@
+[package]
+name = "chinese-ner"
+version = "0.1.0"
+authors = ["messense <messense@icloud.com>"]
+
+[dependencies]
+crfsuite = "0.2"
+jieba-rs = "0.2"
