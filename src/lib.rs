@@ -16,9 +16,9 @@ impl Default for ChineseNER {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct NamedEntity {
-    //word: Vec<String>,
-    //tag: Vec<String>,
+pub struct NamedEntity<'a> {
+    word: Vec<&'a str>,
+    tag: Vec<&'a str>,
     entity: Vec<(usize, usize, &'static str)>,
 }
 
@@ -40,11 +40,11 @@ impl ChineseNER {
         }
     }
 
-    pub fn predict(&self, sentence: &str) -> NamedEntity {
+    pub fn predict<'a>(&'a self, sentence: &'a str) -> NamedEntity<'a> {
         use crfsuite::Attribute;
 
         let mut tagger = self.model.tagger().unwrap();
-        let split_words = split_by_words(&self.segmentor, sentence);
+        let (split_words, tags) = split_by_words(&self.segmentor, sentence);
         let features = sent2features(&split_words);
         let attributes: Vec<crfsuite::Item> = features
             .into_iter()
@@ -63,7 +63,11 @@ impl ChineseNER {
                 is_tag = false;
             }
         }
+        let words = tags.iter().map(|x| x.word).collect();
+        let tags = tags.iter().map(|x| x.tag).collect();
         NamedEntity {
+            word: words,
+            tag: tags,
             entity: entities,
         }
     }
@@ -92,7 +96,7 @@ struct SplitWord<'a> {
     tag: &'a str,
 }
 
-fn split_by_words<'a>(segmentor: &'a Jieba, sentence: &'a str) -> Vec<SplitWord<'a>> {
+fn split_by_words<'a>(segmentor: &'a Jieba, sentence: &'a str) -> (Vec<SplitWord<'a>>, Vec<jieba_rs::Tag<'a>>) {
     let mut words = Vec::new();
     let mut char_indices = sentence.char_indices().map(|x| x.0).peekable();
     while let Some(pos) = char_indices.next() {
@@ -114,7 +118,7 @@ fn split_by_words<'a>(segmentor: &'a Jieba, sentence: &'a str) -> Vec<SplitWord<
     }
     let tags = segmentor.tag(sentence, true);
     let mut index = 0;
-    for word_tag in tags {
+    for word_tag in &tags {
         let char_count = word_tag.word.chars().count();
         for i in 0..char_count {
             let status = {
@@ -133,7 +137,7 @@ fn split_by_words<'a>(segmentor: &'a Jieba, sentence: &'a str) -> Vec<SplitWord<
             index += 1;
         }
     }
-    words
+    (words, tags)
 }
 
 fn sent2features(split_words: &[SplitWord]) -> Vec<Vec<String>> {
@@ -183,7 +187,7 @@ mod tests {
     fn test_split_by_words() {
         let jieba = Jieba::new();
         let sentence = "洗衣机，国内掀起了大数据、云计算的热潮。仙鹤门地区。";
-        let ret = split_by_words(&jieba, sentence);
+        let (ret, _) = split_by_words(&jieba, sentence);
         assert_eq!(
             ret,
             vec![
@@ -222,6 +226,8 @@ mod tests {
         let ner = ChineseNER::new();
         let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
         let result = ner.predict(sentence);
+        assert_eq!(result.word, vec!["今天", "纽约", "的", "天气", "真好", "啊", "，", "京华", "大酒店", "的", "李白", "经理", "吃", "了", "一只", "北京烤鸭", "。"]);
+        assert_eq!(result.tag, vec!["t", "ns", "uj", "n", "d", "zg", "x", "nz", "n", "uj", "nr", "n", "v", "ul", "m", "n", "x"]);
         assert_eq!(result.entity, vec![(2, 4, "location"), (11, 16, "org_name"), (17, 19, "person_name"), (25, 27, "location")]);
     }
 }
