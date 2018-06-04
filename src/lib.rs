@@ -15,6 +15,13 @@ impl Default for ChineseNER {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct NamedEntity {
+    //word: Vec<String>,
+    //tag: Vec<String>,
+    entity: Vec<(usize, usize, &'static str)>,
+}
+
 impl ChineseNER {
     pub fn new() -> Self {
         let model_bytes = include_bytes!("ner.model");
@@ -33,7 +40,7 @@ impl ChineseNER {
         }
     }
 
-    pub fn predict(&self, sentence: &str) -> Vec<String> {
+    pub fn predict(&self, sentence: &str) -> NamedEntity {
         use crfsuite::Attribute;
 
         let mut tagger = self.model.tagger().unwrap();
@@ -44,7 +51,37 @@ impl ChineseNER {
             .map(|x| x.into_iter().map(|f| Attribute::new(f, 1.0)).collect::<crfsuite::Item>())
             .collect();
         let tag_result = tagger.tag(&attributes).unwrap();
-        tag_result
+        let mut is_tag = false;
+        let mut start_index = 0;
+        let mut entities = Vec::new();
+        for (index, tag) in tag_result.iter().enumerate() {
+            if !is_tag && tag.starts_with('B') {
+                start_index = index;
+                is_tag = true;
+            } else if is_tag && tag == "O" {
+                entities.push((start_index, index, get_tag_name(&tag_result[start_index])));
+                is_tag = false;
+            }
+        }
+        NamedEntity {
+            entity: entities,
+        }
+    }
+}
+
+fn get_tag_name(tag: &str) -> &'static str {
+    if tag.contains("PRO") {
+        "product_name"
+    } else if tag.contains("PER") {
+        "person_name"
+    } else if tag.contains("TIM") {
+        "time"
+    } else if tag.contains("ORG") {
+        "org_name"
+    } else if tag.contains("LOC") {
+        "location"
+    } else {
+        "unknown"
     }
 }
 
@@ -184,7 +221,7 @@ mod tests {
     fn test_ner_predict() {
         let ner = ChineseNER::new();
         let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
-        let tags = ner.predict(sentence);
-        assert_eq!(tags, vec!["O", "O", "B-LOC", "I-LOC", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "B-LOC", "I-LOC", "O", "O", "O"]);
+        let result = ner.predict(sentence);
+        assert_eq!(result.entity, vec![(2, 4, "location"), (11, 16, "org_name"), (17, 19, "person_name"), (25, 27, "location")]);
     }
 }
