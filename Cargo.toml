@@ -2,6 +2,12 @@
 name = "chinese-ner"
 version = "0.1.0"
 authors = ["messense <messense@icloud.com>"]
+categories = ["text-processing"]
+description = "A CRF based Chinese Named-entity Recognition Library written in Rust"
+keywords = ["nlp", "chinese", "ner"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/messense/chinese-ner-rs"
 
 [dependencies]
 crfsuite = "0.2"
