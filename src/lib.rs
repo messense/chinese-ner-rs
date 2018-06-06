@@ -1,12 +1,52 @@
 extern crate crfsuite;
 extern crate jieba_rs;
 
+use std::fmt;
 use std::fs::File;
 use std::path::Path;
 use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{self, BufReader};
+use std::error;
 
 use jieba_rs::Jieba;
+
+#[derive(Debug)]
+pub enum Error {
+    Io(io::Error),
+    Crf(crfsuite::CrfError),
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Io(_) => "I/O error",
+            Error::Crf(_) => "crfsuite error",
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::Io(ref err) => err.fmt(f),
+            Error::Crf(ref err) => err.fmt(f),
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    #[inline]
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
+    }
+}
+
+impl From<crfsuite::CrfError> for Error {
+    #[inline]
+    fn from(err: crfsuite::CrfError) -> Error {
+        Error::Crf(err)
+    }
+}
 
 #[derive(Debug)]
 pub struct ChineseNER {
@@ -37,25 +77,25 @@ impl ChineseNER {
         }
     }
 
-    pub fn from_model(model_path: &str) -> Self {
-        let model = crfsuite::Model::from_file(model_path).expect("open model failed");
-        Self {
+    pub fn from_model(model_path: &str) -> Result<Self, Error> {
+        let model = crfsuite::Model::from_file(model_path)?;
+        Ok(Self {
             model,
             segmentor: Jieba::new(),
-        }
+        })
     }
 
-    pub fn predict<'a>(&'a self, sentence: &'a str) -> NamedEntity<'a> {
+    pub fn predict<'a>(&'a self, sentence: &'a str) -> Result<NamedEntity<'a>, Error> {
         use crfsuite::Attribute;
 
-        let mut tagger = self.model.tagger().unwrap();
+        let mut tagger = self.model.tagger()?;
         let (split_words, tags) = split_by_words(&self.segmentor, sentence);
         let features = sent2features(&split_words);
         let attributes: Vec<crfsuite::Item> = features
             .into_iter()
             .map(|x| x.into_iter().map(|f| Attribute::new(f, 1.0)).collect::<crfsuite::Item>())
             .collect();
-        let tag_result = tagger.tag(&attributes).unwrap();
+        let tag_result = tagger.tag(&attributes)?;
         let mut is_tag = false;
         let mut start_index = 0;
         let mut entities = Vec::new();
@@ -70,11 +110,11 @@ impl ChineseNER {
         }
         let words = tags.iter().map(|x| x.word).collect();
         let tags = tags.iter().map(|x| x.tag).collect();
-        NamedEntity {
+        Ok(NamedEntity {
             word: words,
             tag: tags,
             entity: entities,
-        }
+        })
     }
 }
 
@@ -201,10 +241,10 @@ impl NERTrainer {
         }
     }
 
-    pub fn train<T: AsRef<Path>>(&mut self, dataset_path: T) {
-        let file = File::open(dataset_path).expect("Open dataset file failed");
+    pub fn train<T: AsRef<Path>>(&mut self, dataset_path: T) -> Result<(), Error> {
+        let file = File::open(dataset_path)?;
         let reader = BufReader::new(file);
-        let lines = reader.lines().collect::<Result<Vec<String>, _>>().unwrap();
+        let lines = reader.lines().collect::<Result<Vec<String>, _>>()?;
         let mut x_train = Vec::new();
         let mut y_train = Vec::new();
         let mut words: Vec<SplitWord> = Vec::new();
@@ -247,15 +287,16 @@ impl NERTrainer {
                 });
             }
         }
-        self.trainer.select(crfsuite::Algorithm::LBFGS, crfsuite::GraphicalModel::CRF1D).unwrap();
+        self.trainer.select(crfsuite::Algorithm::LBFGS, crfsuite::GraphicalModel::CRF1D)?;
         for (features, yseq) in x_train.into_iter().zip(y_train) {
             let xseq: Vec<crfsuite::Item> = features
                 .into_iter()
                 .map(|x| x.into_iter().map(|f| crfsuite::Attribute::new(f, 1.0)).collect::<crfsuite::Item>())
                 .collect();
-            self.trainer.append(&xseq, &yseq, 0).unwrap();
+            self.trainer.append(&xseq, &yseq, 0)?;
         }
-        self.trainer.train(&self.output_path, -1).unwrap();
+        self.trainer.train(&self.output_path, -1)?;
+        Ok(())
     }
 }
 
@@ -306,7 +347,7 @@ mod tests {
     fn test_ner_predict() {
         let ner = ChineseNER::new();
         let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
-        let result = ner.predict(sentence);
+        let result = ner.predict(sentence).unwrap();
         assert_eq!(result.word, vec!["今天", "纽约", "的", "天气", "真好", "啊", "，", "京华", "大酒店", "的", "李白", "经理", "吃", "了", "一只", "北京烤鸭", "。"]);
         assert_eq!(result.tag, vec!["t", "ns", "uj", "n", "d", "zg", "x", "nz", "n", "uj", "nr", "n", "v", "ul", "m", "n", "x"]);
         assert_eq!(result.entity, vec![(2, 4, "location"), (11, 16, "org_name"), (17, 19, "person_name"), (25, 27, "location")]);
