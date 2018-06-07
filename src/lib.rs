@@ -62,9 +62,9 @@ impl Default for ChineseNER {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct NamedEntity<'a> {
-    word: Vec<&'a str>,
-    tag: Vec<&'a str>,
-    entity: Vec<(usize, usize, &'static str)>,
+    pub word: Vec<&'a str>,
+    pub tag: Vec<&'a str>,
+    pub entity: Vec<(usize, usize, &'static str)>,
 }
 
 impl ChineseNER {
