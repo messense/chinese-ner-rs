@@ -1,6 +1,6 @@
 [package]
 name = "chinese-ner"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["messense <messense@icloud.com>"]
 categories = ["text-processing"]
 description = "A CRF based Chinese Named-entity Recognition Library written in Rust"
