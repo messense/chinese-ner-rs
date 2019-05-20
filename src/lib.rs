@@ -1,6 +1,3 @@
-extern crate crfsuite;
-extern crate jieba_rs;
-
 use std::fmt;
 use std::fs::File;
 use std::path::Path;
