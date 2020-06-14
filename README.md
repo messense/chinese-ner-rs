@@ -12,7 +12,7 @@ Add it to your ``Cargo.toml``:
 
 ```toml
 [dependencies]
-chinese-ner = "0.1"
+chinese-ner = "0.2"
 ```
 
 Add ``extern crate chinese_ner`` to your crate root and your're good to go!
