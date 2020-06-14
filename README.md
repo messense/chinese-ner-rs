@@ -1,7 +1,6 @@
 # chinese-ner-rs
 
-[![Build Status](https://travis-ci.com/messense/chinese-ner-rs.svg?branch=master)](https://travis-ci.com/messense/chinese-ner-rs)
-[![codecov](https://codecov.io/gh/messense/chinese-ner-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/messense/chinese-ner-rs)
+[![GitHub Actions](https://github.com/messense/chinese-ner-rs/workflows/CI/badge.svg)](https://github.com/messense/chinese-ner-rs/actions?query=workflow%3ACI)
 [![Crates.io](https://img.shields.io/crates/v/chinese-ner.svg)](https://crates.io/crates/chinese-ner)
 [![docs.rs](https://docs.rs/chinese-ner/badge.svg)](https://docs.rs/chinese-ner/)
 

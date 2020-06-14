@@ -1,0 +1,15 @@
+[package]
+name = "chinese-ner-cli"
+version = "0.1.0"
+authors = ["messense <messense@icloud.com>"]
+edition = "2018"
+
+[dependencies]
+chinese-ner = { version = "0.2", path = ".." }
+clap = "2.33.1"
+
+[[bin]]
+name = "chinese-ner"
+path = "src/main.rs"
+test = false
+bench = false

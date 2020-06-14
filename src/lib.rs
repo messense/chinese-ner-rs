@@ -1,9 +1,9 @@
+use std::error;
 use std::fmt;
 use std::fs::File;
-use std::path::Path;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
-use std::error;
+use std::path::Path;
 
 use jieba_rs::Jieba;
 
@@ -90,7 +90,11 @@ impl ChineseNER {
         let features = sent2features(&split_words);
         let attributes: Vec<crfsuite::Item> = features
             .into_iter()
-            .map(|x| x.into_iter().map(|f| Attribute::new(f, 1.0)).collect::<crfsuite::Item>())
+            .map(|x| {
+                x.into_iter()
+                    .map(|f| Attribute::new(f, 1.0))
+                    .collect::<crfsuite::Item>()
+            })
             .collect();
         let tag_result = tagger.tag(&attributes)?;
         let mut is_tag = false;
@@ -139,7 +143,10 @@ struct SplitWord<'a> {
     entity_type: String,
 }
 
-fn split_by_words<'a>(segmentor: &'a Jieba, sentence: &'a str) -> (Vec<SplitWord<'a>>, Vec<jieba_rs::Tag<'a>>) {
+fn split_by_words<'a>(
+    segmentor: &'a Jieba,
+    sentence: &'a str,
+) -> (Vec<SplitWord<'a>>, Vec<jieba_rs::Tag<'a>>) {
     let mut words = Vec::new();
     let mut char_indices = sentence.char_indices().map(|x| x.0).peekable();
     while let Some(pos) = char_indices.next() {
@@ -270,7 +277,12 @@ impl NERTrainer {
                     }
                 }
                 x_train.push(sent2features(&words));
-                y_train.push(words.iter().map(|x| x.entity_type.to_string()).collect::<Vec<_>>());
+                y_train.push(
+                    words
+                        .iter()
+                        .map(|x| x.entity_type.to_string())
+                        .collect::<Vec<_>>(),
+                );
                 words.clear();
             } else {
                 let parts: Vec<&str> = line.split_ascii_whitespace().collect();
@@ -284,11 +296,16 @@ impl NERTrainer {
                 });
             }
         }
-        self.trainer.select(crfsuite::Algorithm::LBFGS, crfsuite::GraphicalModel::CRF1D)?;
+        self.trainer
+            .select(crfsuite::Algorithm::LBFGS, crfsuite::GraphicalModel::CRF1D)?;
         for (features, yseq) in x_train.into_iter().zip(y_train) {
             let xseq: Vec<crfsuite::Item> = features
                 .into_iter()
-                .map(|x| x.into_iter().map(|f| crfsuite::Attribute::new(f, 1.0)).collect::<crfsuite::Item>())
+                .map(|x| {
+                    x.into_iter()
+                        .map(|f| crfsuite::Attribute::new(f, 1.0))
+                        .collect::<crfsuite::Item>()
+                })
                 .collect();
             self.trainer.append(&xseq, &yseq, 0)?;
         }
@@ -299,8 +316,8 @@ impl NERTrainer {
 
 #[cfg(test)]
 mod tests {
-    use jieba_rs::Jieba;
     use super::*;
+    use jieba_rs::Jieba;
 
     #[test]
     fn test_split_by_words() {
@@ -310,32 +327,162 @@ mod tests {
         assert_eq!(
             ret,
             vec![
-                SplitWord { word: "洗", status: "B", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "衣", status: "I", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "机", status: "E", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "，", status: "S", tag: "x".to_string(), entity_type: String::new() },
-                SplitWord { word: "国", status: "B", tag: "s".to_string(), entity_type: String::new() },
-                SplitWord { word: "内", status: "E", tag: "s".to_string(), entity_type: String::new() },
-                SplitWord { word: "掀", status: "B", tag: "v".to_string(), entity_type: String::new() },
-                SplitWord { word: "起", status: "E", tag: "v".to_string(), entity_type: String::new() },
-                SplitWord { word: "了", status: "S", tag: "ul".to_string(), entity_type: String::new() },
-                SplitWord { word: "大", status: "S", tag: "a".to_string(), entity_type: String::new() },
-                SplitWord { word: "数", status: "B", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "据", status: "E", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "、", status: "S", tag: "x".to_string(), entity_type: String::new() },
-                SplitWord { word: "云", status: "S", tag: "ns".to_string(), entity_type: String::new() },
-                SplitWord { word: "计", status: "B", tag: "v".to_string(), entity_type: String::new() },
-                SplitWord { word: "算", status: "E", tag: "v".to_string(), entity_type: String::new() },
-                SplitWord { word: "的", status: "S", tag: "uj".to_string(), entity_type: String::new() },
-                SplitWord { word: "热", status: "B", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "潮", status: "E", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "。", status: "S", tag: "x".to_string(), entity_type: String::new() },
-                SplitWord { word: "仙", status: "B", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "鹤", status: "E", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "门", status: "S", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "地", status: "B", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "区", status: "E", tag: "n".to_string(), entity_type: String::new() },
-                SplitWord { word: "。", status: "S", tag: "x".to_string(), entity_type: String::new() },
+                SplitWord {
+                    word: "洗",
+                    status: "B",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "衣",
+                    status: "I",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "机",
+                    status: "E",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "，",
+                    status: "S",
+                    tag: "x".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "国",
+                    status: "B",
+                    tag: "s".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "内",
+                    status: "E",
+                    tag: "s".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "掀",
+                    status: "B",
+                    tag: "v".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "起",
+                    status: "E",
+                    tag: "v".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "了",
+                    status: "S",
+                    tag: "ul".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "大",
+                    status: "S",
+                    tag: "a".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "数",
+                    status: "B",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "据",
+                    status: "E",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "、",
+                    status: "S",
+                    tag: "x".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "云",
+                    status: "S",
+                    tag: "ns".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "计",
+                    status: "B",
+                    tag: "v".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "算",
+                    status: "E",
+                    tag: "v".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "的",
+                    status: "S",
+                    tag: "uj".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "热",
+                    status: "B",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "潮",
+                    status: "E",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "。",
+                    status: "S",
+                    tag: "x".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "仙",
+                    status: "B",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "鹤",
+                    status: "E",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "门",
+                    status: "S",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "地",
+                    status: "B",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "区",
+                    status: "E",
+                    tag: "n".to_string(),
+                    entity_type: String::new()
+                },
+                SplitWord {
+                    word: "。",
+                    status: "S",
+                    tag: "x".to_string(),
+                    entity_type: String::new()
+                },
             ]
         );
     }
@@ -345,8 +492,43 @@ mod tests {
         let ner = ChineseNER::new();
         let sentence = "今天纽约的天气真好啊，京华大酒店的李白经理吃了一只北京烤鸭。";
         let result = ner.predict(sentence).unwrap();
-        assert_eq!(result.word, vec!["今天", "纽约", "的", "天气", "真好", "啊", "，", "京华", "大酒店", "的", "李白", "经理", "吃", "了", "一只", "北京烤鸭", "。"]);
-        assert_eq!(result.tag, vec!["t", "ns", "uj", "n", "d", "zg", "x", "nz", "n", "uj", "nr", "n", "v", "ul", "m", "n", "x"]);
-        assert_eq!(result.entity, vec![(2, 4, "location"), (11, 16, "org_name"), (17, 19, "person_name"), (25, 27, "location")]);
+        assert_eq!(
+            result.word,
+            vec![
+                "今天",
+                "纽约",
+                "的",
+                "天气",
+                "真好",
+                "啊",
+                "，",
+                "京华",
+                "大酒店",
+                "的",
+                "李白",
+                "经理",
+                "吃",
+                "了",
+                "一只",
+                "北京烤鸭",
+                "。"
+            ]
+        );
+        assert_eq!(
+            result.tag,
+            vec![
+                "t", "ns", "uj", "n", "d", "zg", "x", "nz", "n", "uj", "nr", "n", "v", "ul", "m",
+                "n", "x"
+            ]
+        );
+        assert_eq!(
+            result.entity,
+            vec![
+                (2, 4, "location"),
+                (11, 16, "org_name"),
+                (17, 19, "person_name"),
+                (25, 27, "location")
+            ]
+        );
     }
 }
