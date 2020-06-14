@@ -273,7 +273,7 @@ impl NERTrainer {
                 y_train.push(words.iter().map(|x| x.entity_type.to_string()).collect::<Vec<_>>());
                 words.clear();
             } else {
-                let parts: Vec<&str> = line.split(' ').collect();
+                let parts: Vec<&str> = line.split_ascii_whitespace().collect();
                 let word = &parts[0];
                 let entity_type = &parts[1];
                 words.push(SplitWord {
