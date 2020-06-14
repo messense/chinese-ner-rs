@@ -51,6 +51,7 @@ pub struct ChineseNER {
     segmentor: jieba_rs::Jieba,
 }
 
+#[cfg(feature = "bundled-model")]
 impl Default for ChineseNER {
     fn default() -> ChineseNER {
         ChineseNER::new()
@@ -65,6 +66,7 @@ pub struct NamedEntity<'a> {
 }
 
 impl ChineseNER {
+    #[cfg(feature = "bundled-model")]
     pub fn new() -> Self {
         let model_bytes = include_bytes!("ner.model");
         let model = crfsuite::Model::from_memory(&model_bytes[..]).expect("open model failed");
@@ -487,6 +489,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "bundled-model")]
     #[test]
     fn test_ner_predict() {
         let ner = ChineseNER::new();

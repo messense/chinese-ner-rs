@@ -14,5 +14,9 @@ repository = "https://github.com/messense/chinese-ner-rs"
 crfsuite = "0.2"
 jieba-rs = "0.5"
 
+[features]
+default = ["bundled-model"]
+bundled-model = []
+
 [workspace]
 members = [".", "cli"]
