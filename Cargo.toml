@@ -12,7 +12,7 @@ repository = "https://github.com/messense/chinese-ner-rs"
 
 [dependencies]
 crfsuite = "0.2"
-jieba-rs = "0.5"
+jieba-rs = "0.6"
 
 [features]
 default = ["bundled-model"]
