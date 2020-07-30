@@ -61,7 +61,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "chinese-ner"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "crfsuite 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "jieba-rs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -71,7 +71,7 @@ dependencies = [
 name = "chinese-ner-cli"
 version = "0.1.0"
 dependencies = [
- "chinese-ner 0.2.2",
+ "chinese-ner 0.2.3",
  "clap 2.33.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
