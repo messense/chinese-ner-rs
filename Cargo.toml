@@ -11,7 +11,7 @@ readme = "README.md"
 repository = "https://github.com/messense/chinese-ner-rs"
 
 [dependencies]
-crfsuite = "0.2"
+crfsuite = "0.3"
 jieba-rs = "0.6"
 
 [features]
